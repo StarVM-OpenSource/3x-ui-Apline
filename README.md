@@ -15,20 +15,14 @@ bash <(curl -Ls https://raw.githubusercontent.com/56idc/3x-ui-alpine/master/inst
 
 **如果这个项目对您有帮助，您可以给它一个**:star2:
 
-<p align="left">
+<div style="display: flex; gap: 20px; align-items: center;">
   <a href="https://alice.ws" target="_blank">
     <img src="https://app.alice.ws/logo.png" alt="Image" style="width: 150px;">
   </a>
-</p>
-
-<p align="left">
   <a href="https://www.starvm.cn" target="_blank">
     <img src="https://www.starvm.cn/upload/logo3.png" alt="Image" style="width: 150px;">
   </a>
-</p>
-
-<p align="left">
   <a href="https://github.com/MHSanaei/3x-ui" target="_blank">
     <img src="https://raw.githubusercontent.com/MHSanaei/3x-ui/main/media/3x-ui-light.png" alt="Image" style="width: 150px;">
   </a>
-</p>
+</div>
