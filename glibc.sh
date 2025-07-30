@@ -17,4 +17,4 @@ curl -Lo glibc-${GLIBC_VER}.apk https://github.com/sgerrand/alpine-pkg-glibc/rel
 # 4. 安装 glibc，允许覆盖
 apk add --allow-untrusted --force-overwrite glibc-${GLIBC_VER}.apk
 
-echo "glibc ${GLIBC_VER} 安装完成 ✅"
+echo "glibc ${GLIBC_VER} 安装完成 "
