@@ -7,16 +7,53 @@ plain='\033[0m'
 
 cur_dir=$(pwd)
 
-# check root
-[[ $EUID -ne 0 ]] && echo -e "${red}严重错误: ${plain} 请以 root 权限运行此脚本 \n " && exit 1
+# 检查是否root权限
+[[ $EUID -ne 0 ]] && echo -e "${red}严重错误: ${plain} 请以 root 权限运行此脚本 \n" && exit 1
 
 install_base() {
-	apk add --no-cache --update ca-certificates tzdata fail2ban bash
-	rm -f /etc/fail2ban/jail.d/alpine-ssh.conf
-	cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
-	sed -i "s/^\[ssh\]$/&\nenabled = false/" /etc/fail2ban/jail.local
-	sed -i "s/^\[sshd\]$/&\nenabled = false/" /etc/fail2ban/jail.local
-	sed -i "s/#allowipv6 = auto/allowipv6 = auto/g" /etc/fail2ban/fail2ban.conf
+    echo -e "${green}安装基础依赖（curl、bash、tar、ca-certificates、fail2ban等）...${plain}"
+    apk add --no-cache --update ca-certificates tzdata fail2ban bash curl tar
+    rm -f /etc/fail2ban/jail.d/alpine-ssh.conf
+    cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
+    sed -i "s/^\[ssh\]$/&\nenabled = false/" /etc/fail2ban/jail.local
+    sed -i "s/^\[sshd\]$/&\nenabled = false/" /etc/fail2ban/jail.local
+    sed -i "s/#allowipv6 = auto/allowipv6 = auto/g" /etc/fail2ban/fail2ban.conf
+}
+
+install_glibc_alpine() {
+    echo -e "${green}检测并安装glibc兼容层...${plain}"
+
+    # 简单检测glibc是否存在
+    if [ -f /lib/ld-linux-x86-64.so.2 ] || [ -f /lib64/ld-linux-x86-64.so.2 ]; then
+        echo -e "${yellow}glibc 可能已经安装，跳过安装步骤${plain}"
+        return 0
+    fi
+
+    local glibc_url="https://github.com/sgerrand/alpine-pkg-glibc/releases/download/2.34-r0/glibc-2.34-r0.apk"
+    local glibc_file="/tmp/glibc.apk"
+
+    echo -e "${green}下载glibc包...${plain}"
+    curl -L -o "${glibc_file}" "${glibc_url}"
+
+    if [ ! -s "${glibc_file}" ]; then
+        echo -e "${red}glibc包下载失败，请检查网络${plain}"
+        exit 1
+    fi
+
+    echo -e "${green}解压glibc包并安装，跳过冲突文件/etc/nsswitch.conf${plain}"
+    mkdir -p /tmp/glibc-temp && cd /tmp/glibc-temp
+    tar -xzf "${glibc_file}"
+
+    # 删除冲突文件，避免apk安装时覆盖alpine自带文件冲突
+    rm -f etc/nsswitch.conf
+
+    # 拷贝文件覆盖安装
+    cp -a * /
+
+    cd "$cur_dir"
+    rm -rf /tmp/glibc-temp "${glibc_file}"
+
+    echo -e "${green}glibc安装完成${plain}"
 }
 
 gen_random_string() {
@@ -86,7 +123,7 @@ config_after_install() {
 }
 
 install_x-ui() {
-	cd /usr/local
+    cd /usr/local
     if [ $# == 0 ]; then
         tag_version=$(curl -Ls "https://api.github.com/repos/StarVM-OpenSource/3x-ui-Apline/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
         if [[ ! -n "$tag_version" ]]; then
@@ -94,7 +131,8 @@ install_x-ui() {
             exit 1
         fi
         echo -e "获取x-ui最新版本: ${tag_version}, 开始安装..."
-        wget --no-check-certificate -O /usr/local/x-ui-linux-alpine.tar.gz https://github.com/StarVM-OpenSource/3x-ui-Apline/releases/download/${tag_version}/x-ui-linux-alpine.tar.gz
+        wget --no-check-certificate -O /usr/local/x-ui-linux-alpine.tar.gz https://github.com/StarVM-OpenSource/3x-ui-Apline/releases/download/${tag_version}/x-ui-linux-amd64.tar.gz
+
         if [[ $? -ne 0 ]]; then
             echo -e "${red}下载 x-ui 失败, 请确保你的服务器可以访问 GitHub ${plain}"
             exit 1
@@ -102,13 +140,13 @@ install_x-ui() {
     else
         tag_version=$1
         tag_version_numeric=${tag_version#v}
-        min_version="2.4.8"
+        min_version="2.6.2"
         if [[ "$(printf '%s\n' "$min_version" "$tag_version_numeric" | sort -V | head -n1)" != "$min_version" ]]; then
-            echo -e "${red}请使用较新的版本(至少 v2.4.8), 退出安装...${plain}"
+            echo -e "${red}请使用较新的版本(至少 v2.6.2), 退出安装...${plain}"
             exit 1
         fi
 
-        url="https://github.com/StarVM-OpenSource/3x-ui-Apline/releases/download/${tag_version}/x-ui-linux-alpine.tar.gz"
+        url="https://github.com/StarVM-OpenSource/3x-ui-Apline/releases/download/${tag_version}/x-ui-linux-amd64.tar.gz"
         echo -e "开始安装x-ui $1"
         wget --no-check-certificate -O /usr/local/x-ui-linux-alpine.tar.gz ${url}
         if [[ $? -ne 0 ]]; then
@@ -124,17 +162,17 @@ install_x-ui() {
       fail2ban-client -x stop
       rm /usr/local/x-ui/ -rf
       rm /etc/init.d/x-ui
-	  if [[ -e /app/bin/ ]]; then
-	    pgrep -f x-ui | xargs -r kill -9
-            rm /app -rf
-	  fi
+      if [[ -e /app/bin/ ]]; then
+        pgrep -f x-ui | xargs -r kill -9
+        rm /app -rf
+      fi
     fi
 
-    tar zxvf x-ui-linux-alpine.tar.gz
-    rm x-ui-linux-alpine.tar.gz -f
+    tar zxvf /usr/local/x-ui-linux-alpine.tar.gz
+    rm /usr/local/x-ui-linux-alpine.tar.gz -f
     mv x-ui/app/* x-ui
-    rm x-ui/app -rf
-    rm x-ui/DockerEntrypoint.sh
+    rm -rf x-ui/app
+    rm -f x-ui/DockerEntrypoint.sh
     chmod +x x-ui/x-ui x-ui/bin/xray-linux-amd64
     wget --no-check-certificate -O /usr/bin/x-ui https://raw.githubusercontent.com/StarVM-OpenSource/3x-ui-Apline/refs/heads/main/x-ui-alpine.sh
     chmod +x /usr/bin/x-ui
@@ -166,6 +204,8 @@ install_x-ui() {
     echo -e "----------------------------------------------"
 }
 
-echo -e "${green}运行中...${plain}"
+# 主执行流程
+echo -e "${green}开始执行脚本...${plain}"
 install_base
+install_glibc_alpine
 install_x-ui $1
