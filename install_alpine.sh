@@ -5,171 +5,113 @@ green='\033[0;32m'
 yellow='\033[0;33m'
 plain='\033[0m'
 
-cur_dir=$(pwd)
-
-# 检查是否root权限
-[[ $EUID -ne 0 ]] && echo -e "${red}严重错误: ${plain} 请以 root 权限运行此脚本 \n" && exit 1
+[[ $EUID -ne 0 ]] && echo -e "${red}错误：请以 root 权限运行脚本${plain}" && exit 1
 
 install_base() {
-    echo -e "${green}安装基础依赖（curl、bash、tar、ca-certificates、fail2ban等）...${plain}"
-    apk add --no-cache --update ca-certificates tzdata fail2ban bash curl tar
+    echo -e "${green}安装基础依赖（curl、bash、tar、fail2ban等）...${plain}"
+    apk add --no-cache --update ca-certificates tzdata fail2ban bash curl tar gzip
+    # Fail2ban 简单配置禁用 ssh
     rm -f /etc/fail2ban/jail.d/alpine-ssh.conf
     cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
     sed -i "s/^\[ssh\]$/&\nenabled = false/" /etc/fail2ban/jail.local
-    sed -i "s/^\[sshd\]$/&\nenabled = false/" /etc/fail2ban/jail.local
+    sed -i "s/^\[sshd\]$/&\nenabled = false/" /etc/fail2ban.jail.local || true
     sed -i "s/#allowipv6 = auto/allowipv6 = auto/g" /etc/fail2ban/fail2ban.conf
 }
 
-install_glibc_alpine() {
-    echo -e "${green}检测并安装glibc兼容层...${plain}"
-
-    # 简单检测glibc是否存在
-    if [ -f /lib/ld-linux-x86-64.so.2 ] || [ -f /lib64/ld-linux-x86-64.so.2 ]; then
-        echo -e "${yellow}glibc 可能已经安装，跳过安装步骤${plain}"
-        return 0
+install_glibc() {
+    if ! ldd --version >/dev/null 2>&1; then
+        echo -e "${yellow}检测到未安装glibc，开始安装glibc兼容层...${plain}"
+        curl -Lo /etc/apk/keys/sgerrand.rsa.pub https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub
+        latest_glibc_version=$(curl -s https://api.github.com/repos/sgerrand/alpine-pkg-glibc/releases/latest | grep tag_name | cut -d '"' -f4)
+        glibc_url="https://github.com/sgerrand/alpine-pkg-glibc/releases/download/${latest_glibc_version}/glibc-${latest_glibc_version#v}.apk"
+        curl -Lo /tmp/glibc.apk "$glibc_url"
+        apk add --allow-untrusted /tmp/glibc.apk
+        rm -f /tmp/glibc.apk
+    else
+        echo -e "${green}glibc已安装，跳过此步骤${plain}"
     fi
-
-    local glibc_url="https://github.com/sgerrand/alpine-pkg-glibc/releases/download/2.34-r0/glibc-2.34-r0.apk"
-    local glibc_file="/tmp/glibc.apk"
-
-    echo -e "${green}下载glibc包...${plain}"
-    curl -L -o "${glibc_file}" "${glibc_url}"
-
-    if [ ! -s "${glibc_file}" ]; then
-        echo -e "${red}glibc包下载失败，请检查网络${plain}"
-        exit 1
-    fi
-
-    echo -e "${green}解压glibc包并安装，跳过冲突文件/etc/nsswitch.conf${plain}"
-    mkdir -p /tmp/glibc-temp && cd /tmp/glibc-temp
-    tar -xzf "${glibc_file}"
-
-    # 删除冲突文件，避免apk安装时覆盖alpine自带文件冲突
-    rm -f etc/nsswitch.conf
-
-    # 拷贝文件覆盖安装
-    cp -a * /
-
-    cd "$cur_dir"
-    rm -rf /tmp/glibc-temp "${glibc_file}"
-
-    echo -e "${green}glibc安装完成${plain}"
 }
 
 gen_random_string() {
     local length="$1"
-    local random_string=$(LC_ALL=C tr -dc 'a-zA-Z0-9' </dev/urandom | fold -w "$length" | head -n 1)
-    echo "$random_string"
+    LC_ALL=C tr -dc 'a-zA-Z0-9' </dev/urandom | fold -w "$length" | head -n 1
 }
 
 config_after_install() {
-    local server_ip=$(curl -s https://api.ipify.org)
-    local config_webBasePath=$(gen_random_string 15)
-    local config_username=$(gen_random_string 10)
-    local config_password=$(gen_random_string 10)
-    local config_port=$(shuf -i 1024-62000 -n 1)
+    local existing_username existing_password existing_webBasePath existing_port server_ip
+    existing_username=$(/usr/local/x-ui/x-ui setting -show true 2>/dev/null | grep -Eo 'username: .+' | awk '{print $2}') || true
+    existing_password=$(/usr/local/x-ui/x-ui setting -show true 2>/dev/null | grep -Eo 'password: .+' | awk '{print $2}') || true
+    existing_webBasePath=$(/usr/local/x-ui/x-ui setting -show true 2>/dev/null | grep -Eo 'webBasePath: .+' | awk '{print $2}') || true
+    existing_port=$(/usr/local/x-ui/x-ui setting -show true 2>/dev/null | grep -Eo 'port: .+' | awk '{print $2}') || true
+    server_ip=$(curl -s https://api.ipify.org || echo "服务器IP获取失败")
 
-    /usr/local/x-ui/x-ui setting -username "${config_username}" -password "${config_password}" -port "${config_port}" -webBasePath "${config_webBasePath}"
+    if [[ -z "$existing_username" || "$existing_username" == "admin" ]]; then
+        existing_username=$(gen_random_string 10)
+        existing_password=$(gen_random_string 10)
+        existing_webBasePath=$(gen_random_string 15)
+        existing_port=$(shuf -i 1024-62000 -n 1)
 
-    echo -e "x-ui 安装完毕，已生成随机安全登录信息："
+        /usr/local/x-ui/x-ui setting -username "$existing_username" -password "$existing_password" -port "$existing_port" -webBasePath "$existing_webBasePath"
+    fi
+
+    echo -e "${green}x-ui 面板安装完成，安全登录信息如下：${plain}"
     echo -e "###############################################"
-    echo -e "${green}用户名: ${config_username}${plain}"
-    echo -e "${green}密码: ${config_password}${plain}"
-    echo -e "${green}端口: ${config_port}${plain}"
-    echo -e "${green}面板路径: ${config_webBasePath}${plain}"
-    echo -e "${green}访问URL: http://${server_ip}:${config_port}/${config_webBasePath}${plain}"
+    echo -e "用户名: ${green}${existing_username}${plain}"
+    echo -e "密码: ${green}${existing_password}${plain}"
+    echo -e "端口: ${green}${existing_port}${plain}"
+    echo -e "面板路径: ${green}${existing_webBasePath}${plain}"
+    echo -e "访问面板URL: ${green}http://${server_ip}:${existing_port}/${existing_webBasePath}${plain}"
     echo -e "###############################################"
-
-    /usr/local/x-ui/x-ui migrate
 }
 
-install_x-ui() {
-    cd /usr/local
-    if [ $# == 0 ]; then
-        tag_version=$(curl -Ls "https://api.github.com/repos/StarVM-OpenSource/3x-ui-Apline/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
-        if [[ ! -n "$tag_version" ]]; then
-            echo -e "${red}获取x-ui版本失败, 可能是GitHub API限制或网络连接失败, 请检查您的网络连接后重试...${plain}"
-            exit 1
-        fi
-        echo -e "获取x-ui最新版本: ${tag_version}, 开始安装..."
-        wget --no-check-certificate -O /usr/local/x-ui-linux-alpine.tar.gz https://github.com/StarVM-OpenSource/3x-ui-Apline/releases/download/${tag_version}/x-ui-linux-amd64.tar.gz
+install_x_ui() {
+    echo -e "${green}开始安装x-ui...${plain}"
 
-        if [[ $? -ne 0 ]]; then
-            echo -e "${red}下载 x-ui 失败, 请确保你的服务器可以访问 GitHub ${plain}"
-            exit 1
-        fi
-    else
-        tag_version=$1
-        tag_version_numeric=${tag_version#v}
-        min_version="2.4.8"
-        if [[ "$(printf '%s\n' "$min_version" "$tag_version_numeric" | sort -V | head -n1)" != "$min_version" ]]; then
-            echo -e "${red}请使用较新的版本(至少 v2.4.8), 退出安装...${plain}"
-            exit 1
-        fi
-
-        url="https://github.com/StarVM-OpenSource/3x-ui-Apline/releases/download/${tag_version}/x-ui-linux-amd64.tar.gz"
-        echo -e "开始安装x-ui $1"
-        wget --no-check-certificate -O /usr/local/x-ui-linux-alpine.tar.gz ${url}
-        if [[ $? -ne 0 ]]; then
-            echo -e "${red}下载x-ui $1 失败, 请检查版本是否存在 ${plain}"
-            exit 1
-        fi
-    fi
-
-    if [[ -e /usr/local/x-ui/ ]]; then
-      echo -e "卸载旧版本..."
-      rc-update del x-ui
-      rc-service x-ui stop
-      fail2ban-client -x stop
-      rm /usr/local/x-ui/ -rf
-      rm /etc/init.d/x-ui
-      if [[ -e /app/bin/ ]]; then
+    # 卸载旧版本
+    if [[ -d /usr/local/x-ui ]]; then
+        echo -e "${yellow}检测到旧版本，正在卸载...${plain}"
+        rc-update del x-ui
+        rc-service x-ui stop
+        fail2ban-client -x stop
         pgrep -f x-ui | xargs -r kill -9
-        rm /app -rf
-      fi
+        rm -rf /usr/local/x-ui
+        rm -f /etc/init.d/x-ui
     fi
 
-    tar zxvf /usr/local/x-ui-linux-alpine.tar.gz
-    rm /usr/local/x-ui-linux-alpine.tar.gz -f
-    # 新版包没有 app 目录，改直接mv x-ui/* 到 /usr/local/x-ui
-    mkdir -p /usr/local/x-ui
-    mv x-ui/* /usr/local/x-ui/
-    rm -rf x-ui
+    cd /usr/local || exit 1
+
+    tag_version=$(curl -Ls "https://api.github.com/repos/StarVM-OpenSource/3x-ui-Apline/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+    if [[ -z "$tag_version" ]]; then
+        echo -e "${red}获取x-ui最新版本失败${plain}"
+        exit 1
+    fi
+
+    echo -e "最新版本：${tag_version}，开始下载安装包..."
+    wget --no-check-certificate -O x-ui-linux-alpine.tar.gz "https://github.com/StarVM-OpenSource/3x-ui-Apline/releases/download/${tag_version}/x-ui-linux-amd64.tar.gz"
+    if [[ $? -ne 0 ]]; then
+        echo -e "${red}下载失败，请检查网络${plain}"
+        exit 1
+    fi
+
+    tar zxvf x-ui-linux-alpine.tar.gz
+    rm -f x-ui-linux-alpine.tar.gz
 
     chmod +x /usr/local/x-ui/x-ui /usr/local/x-ui/bin/xray-linux-amd64
+
     wget --no-check-certificate -O /usr/bin/x-ui https://raw.githubusercontent.com/StarVM-OpenSource/3x-ui-Apline/refs/heads/main/x-ui-alpine.sh
     chmod +x /usr/bin/x-ui
     wget --no-check-certificate -O /etc/init.d/x-ui https://raw.githubusercontent.com/StarVM-OpenSource/3x-ui-Apline/refs/heads/main/x-ui.rc
     chmod +x /etc/init.d/x-ui
 
-    config_after_install
-    export XRAY_VMESS_AEAD_FORCED="false"
-    fail2ban-client -x start
     rc-update add x-ui default
     rc-service x-ui start
-    echo -e "${green}x-ui ${tag_version}${plain} 安装完成, 运行中..."
-    echo -e ""
-    echo -e "x-ui子命令菜单:"
-    echo -e "----------------------------------------------"
-    echo -e "x-ui              - 主菜单"
-    echo -e "x-ui start        - 运行服务"
-    echo -e "x-ui stop         - 停止服务"
-    echo -e "x-ui restart      - 重启服务"
-    echo -e "x-ui status       - 查看服务状态"
-    echo -e "x-ui settings     - 查看服务配置"
-    echo -e "x-ui enable       - 打开服务开机自动启动"
-    echo -e "x-ui disable      - 关闭服务开机自动启动"
-    echo -e "x-ui log          - 查看日志"
-    echo -e "x-ui banlog       - 查看Fail2ban日志"
-    echo -e "x-ui update       - 升级"
-    echo -e "x-ui legacy       - 安装旧版本"
-    echo -e "x-ui install      - 安装"
-    echo -e "x-ui uninstall    - 卸载"
-    echo -e "----------------------------------------------"
+
+    /usr/local/x-ui/x-ui migrate
+
+    config_after_install
 }
 
-# 主执行流程
-echo -e "${green}开始执行脚本...${plain}"
+# 主流程
 install_base
-install_glibc_alpine
-install_x-ui $1
+install_glibc
+install_x_ui
