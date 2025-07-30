@@ -20,3 +20,15 @@ bash <(curl -Ls https://raw.githubusercontent.com/56idc/3x-ui-alpine/master/inst
     <img src="https://app.alice.ws/logo.png" alt="Image" style="width: 150px;">
   </a>
 </p>
+
+<p align="left">
+  <a href="https://www.starvm.cn" target="_blank">
+    <img src="https://www.starvm.cn/upload/logo3.png" alt="Image" style="width: 150px;">
+  </a>
+</p>
+
+<p align="left">
+  <a href="https://github.com/MHSanaei/3x-ui" target="_blank">
+    <img src="https://raw.githubusercontent.com/MHSanaei/3x-ui/main/media/3x-ui-light.png" alt="Image" style="width: 150px;">
+  </a>
+</p>
