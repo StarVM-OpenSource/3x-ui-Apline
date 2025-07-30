@@ -15,6 +15,8 @@ bash <(curl -Ls https://raw.githubusercontent.com/StarVM-OpenSource/3x-ui-Apline
 bash <(curl -Ls https://raw.githubusercontent.com/StarVM-OpenSource/3x-ui-Apline/refs/heads/main/install_alpine.sh)
 ```
 
+# 安装完成后需要执行一次x-ui菜单重启服务才能正常访问
+
 # 仅移植了核心程序 不保证其他菜单可用性
 
 ## 致谢
