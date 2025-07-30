@@ -8,14 +8,15 @@ plain='\033[0m'
 [[ $EUID -ne 0 ]] && echo -e "${red}错误：请以 root 权限运行脚本${plain}" && exit 1
 
 install_base() {
-    echo -e "${green}安装基础依赖（curl、bash、tar、fail2ban等）...${plain}"
-    apk add --no-cache --update ca-certificates tzdata fail2ban bash curl tar gzip
-    # Fail2ban 简单配置禁用 ssh
-    rm -f /etc/fail2ban/jail.d/alpine-ssh.conf
-    cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
-    sed -i "s/^\[ssh\]$/&\nenabled = false/" /etc/fail2ban/jail.local
-    sed -i "s/^\[sshd\]$/&\nenabled = false/" /etc/fail2ban.jail.local || true
-    sed -i "s/#allowipv6 = auto/allowipv6 = auto/g" /etc/fail2ban/fail2ban.conf
+    echo -e "${green}安装基础依赖（curl、bash、tar等）...${plain}"
+    apk add --no-cache --update ca-certificates tzdata bash curl tar gzip
+    # 下面这部分是 Fail2ban 相关配置，删除或注释掉即可
+    # apk add --no-cache fail2ban
+    # rm -f /etc/fail2ban/jail.d/alpine-ssh.conf
+    # cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
+    # sed -i "s/^\[ssh\]$/&\nenabled = false/" /etc/fail2ban/jail.local
+    # sed -i "s/^\[sshd\]$/&\nenabled = false/" /etc/fail2ban.jail.local || true
+    # sed -i "s/#allowipv6 = auto/allowipv6 = auto/g" /etc/fail2ban/fail2ban.conf
 }
 
 install_glibc() {
@@ -88,7 +89,6 @@ install_x_ui() {
         echo -e "${yellow}检测到旧版本，正在卸载...${plain}"
         rc-update del x-ui
         rc-service x-ui stop
-        fail2ban-client -x stop
         pgrep -f x-ui | xargs -r kill -9
         rm -rf /usr/local/x-ui
         rm -f /etc/init.d/x-ui
