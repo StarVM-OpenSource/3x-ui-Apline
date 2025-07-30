@@ -19,36 +19,32 @@ install_base() {
 }
 
 install_glibc() {
-    if ! command -v ldd >/dev/null 2>&1; then
-        echo -e "${yellow}检测到未安装glibc，开始安装glibc兼容层...${plain}"
+    echo -e "${yellow}开始强制安装glibc兼容层...${plain}"
 
-        # 导入签名公钥
-        curl -fsSL -o /etc/apk/keys/sgerrand.rsa.pub https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub || {
-            echo -e "${red}下载公钥失败，安装中止${plain}"
-            exit 1
-        }
+    # 导入签名公钥（重复导入无影响）
+    curl -fsSL -o /etc/apk/keys/sgerrand.rsa.pub https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub || {
+        echo -e "${red}下载公钥失败，安装中止${plain}"
+        exit 1
+    }
 
-        # 下载glibc安装包
-        glibc_url="https://github.com/sgerrand/alpine-pkg-glibc/releases/download/2.35-r1/glibc-2.35-r1.apk"
-        curl -fsSL -o /tmp/glibc.apk "$glibc_url" || {
-            echo -e "${red}下载glibc包失败，安装中止${plain}"
-            exit 1
-        }
+    # 下载glibc安装包
+    glibc_url="https://github.com/sgerrand/alpine-pkg-glibc/releases/download/2.35-r1/glibc-2.35-r1.apk"
+    curl -fsSL -o /tmp/glibc.apk "$glibc_url" || {
+        echo -e "${red}下载glibc包失败，安装中止${plain}"
+        exit 1
+    }
 
-        # 安装glibc包
-        apk add --allow-untrusted /tmp/glibc.apk || {
-            echo -e "${red}安装glibc失败，安装中止${plain}"
-            rm -f /tmp/glibc.apk
-            exit 1
-        }
-
+    # 强制覆盖安装glibc包
+    apk add --allow-untrusted --force-overwrite /tmp/glibc.apk || {
+        echo -e "${red}安装glibc失败，安装中止${plain}"
         rm -f /tmp/glibc.apk
-        echo -e "${green}glibc 安装完成${plain}"
-    else
-        echo -e "${green}glibc 已安装，跳过此步骤${plain}"
-    fi
+        exit 1
+    }
 
-    # 设置环境变量，保证动态库能被找到
+    rm -f /tmp/glibc.apk
+    echo -e "${green}glibc 强制安装完成${plain}"
+
+    # 设置环境变量
     export LD_LIBRARY_PATH=/lib:/usr/glibc-compat/lib:$LD_LIBRARY_PATH
 }
 
