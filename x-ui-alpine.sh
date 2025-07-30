@@ -190,10 +190,8 @@ reset_user() {
     [[ -z $config_account ]] && config_account=$(date +%s%N | md5sum | cut -c 1-8)
     read -rp "请设置登录密码 [默认密码系统随机生成]: " config_password
     [[ -z $config_password ]] && config_password=$(date +%s%N | md5sum | cut -c 1-8)
-    /usr/glibc-compat/lib/ld-linux-x86-64.so.2 --library-path /usr/glibc-com
-pat/lib /usr/local/x-ui/x-ui setting -username ${config_account} -password ${config_password} >/dev/null 2>&1
-    /usr/glibc-compat/lib/ld-linux-x86-64.so.2 --library-path /usr/glibc-com
-pat/lib /usr/local/x-ui/x-ui setting -remove_secret >/dev/null 2>&1
+    /usr/local/x-ui/x-ui setting -username ${config_account} -password ${config_password} >/dev/null 2>&1
+    /usr/local/x-ui/x-ui setting -remove_secret >/dev/null 2>&1
     echo -e "面板登录用户名已重置为: ${green} ${config_account} ${plain}"
     echo -e "面板登录密码已重置为: ${green} ${config_password} ${plain}"
     echo -e "${yellow} 面板登录秘密令牌已禁用 ${plain}"
@@ -219,8 +217,7 @@ reset_webbasepath() {
     config_webBasePath=$(gen_random_string 10)
 
     # Apply the new web base path setting
-    /usr/glibc-compat/lib/ld-linux-x86-64.so.2 --library-path /usr/glibc-com
-pat/lib /usr/local/x-ui/x-ui setting -webBasePath "${config_webBasePath}" >/dev/null 2>&1
+    /usr/local/x-ui/x-ui setting -webBasePath "${config_webBasePath}" >/dev/null 2>&1
     
     echo -e "面板路径已重置为: ${green}${config_webBasePath}${plain}"
     echo -e "${green}请访问新面板径.${plain}"
@@ -235,15 +232,13 @@ reset_config() {
         fi
         return 0
     fi
-    /usr/glibc-compat/lib/ld-linux-x86-64.so.2 --library-path /usr/glibc-com
-pat/lib /usr/local/x-ui/x-ui setting -reset
+    /usr/local/x-ui/x-ui setting -reset
     echo -e "所有面板设置已重置为默认值."
     restart
 }
 
 check_config() {
-    local info=$(/usr/glibc-compat/lib/ld-linux-x86-64.so.2 --library-path /usr/glibc-com
-pat/lib /usr/local/x-ui/x-ui setting -show true)
+    local info=$(/usr/local/x-ui/x-ui setting -show true)
     if [[ $? != 0 ]]; then
         LOGE "获取当前设置错误, 请检查日志"
         show_menu
@@ -253,8 +248,7 @@ pat/lib /usr/local/x-ui/x-ui setting -show true)
 
     local existing_webBasePath=$(echo "$info" | grep -Eo 'webBasePath: .+' | awk '{print $2}')
     local existing_port=$(echo "$info" | grep -Eo 'port: .+' | awk '{print $2}')
-    local existing_cert=$(/usr/glibc-compat/lib/ld-linux-x86-64.so.2 --library-path /usr/glibc-com
-pat/lib /usr/local/x-ui/x-ui setting -getCert true | grep -Eo 'cert: .+' | awk '{print $2}')
+    local existing_cert=$(/usr/local/x-ui/x-ui setting -getCert true | grep -Eo 'cert: .+' | awk '{print $2}')
     local server_ip=$(curl -s https://api.ipify.org)
 
     if [[ -n "$existing_cert" ]]; then
@@ -276,8 +270,7 @@ set_port() {
         LOGD "已取消"
         before_show_menu
     else
-        /usr/glibc-compat/lib/ld-linux-x86-64.so.2 --library-path /usr/glibc-com
-pat/lib /usr/local/x-ui/x-ui setting -port ${port}
+        /usr/local/x-ui/x-ui setting -port ${port}
         echo -e "端口已设置, 请立即重启面板, 并使用新的端口 ${green}${port}${plain} 访问面板"
         confirm_restart
     fi
@@ -727,8 +720,7 @@ ssl_cert_issue_main() {
                 local webKeyFile="/root/cert/${domain}/privkey.pem"
 
                 if [[ -f "${webCertFile}" && -f "${webKeyFile}" ]]; then
-                    /usr/glibc-compat/lib/ld-linux-x86-64.so.2 --library-path /usr/glibc-com
-pat/lib /usr/local/x-ui/x-ui cert -webCert "$webCertFile" -webCertKey "$webKeyFile"
+                    /usr/local/x-ui/x-ui cert -webCert "$webCertFile" -webCertKey "$webKeyFile"
                     echo "设置域名路径: $domain"
                     echo "  - 证书文件: $webCertFile"
                     echo "  - 私钥文件: $webKeyFile"
@@ -751,10 +743,8 @@ pat/lib /usr/local/x-ui/x-ui cert -webCert "$webCertFile" -webCertKey "$webKeyFi
 }
 
 ssl_cert_issue() {
-    local existing_webBasePath=$(/usr/glibc-compat/lib/ld-linux-x86-64.so.2 --library-path /usr/glibc-com
-pat/lib /usr/local/x-ui/x-ui setting -show true | grep -Eo 'webBasePath: .+' | awk '{print $2}')
-    local existing_port=$(/usr/glibc-compat/lib/ld-linux-x86-64.so.2 --library-path /usr/glibc-com
-pat/lib /usr/local/x-ui/x-ui setting -show true | grep -Eo 'port: .+' | awk '{print $2}')
+    local existing_webBasePath=$(/usr/local/x-ui/x-ui setting -show true | grep -Eo 'webBasePath: .+' | awk '{print $2}')
+    local existing_port=$(/usr/local/x-ui/x-ui setting -show true | grep -Eo 'port: .+' | awk '{print $2}')
     # check for acme.sh first
     if ! command -v ~/.acme.sh/acme.sh &>/dev/null; then
         echo "acme.sh无法找到, 我们将安装它"
@@ -855,8 +845,7 @@ pat/lib /usr/local/x-ui/x-ui setting -show true | grep -Eo 'port: .+' | awk '{pr
         local webKeyFile="/root/cert/${domain}/privkey.pem"
 
         if [[ -f "$webCertFile" && -f "$webKeyFile" ]]; then
-            /usr/glibc-compat/lib/ld-linux-x86-64.so.2 --library-path /usr/glibc-com
-pat/lib /usr/local/x-ui/x-ui cert -webCert "$webCertFile" -webCertKey "$webKeyFile"
+            /usr/local/x-ui/x-ui cert -webCert "$webCertFile" -webCertKey "$webKeyFile"
             LOGI "配置面板域名: $domain"
             LOGI "  - 证书文件: $webCertFile"
             LOGI "  - 私钥文件: $webKeyFile"
@@ -871,10 +860,8 @@ pat/lib /usr/local/x-ui/x-ui cert -webCert "$webCertFile" -webCertKey "$webKeyFi
 }
 
 ssl_cert_issue_CF() {
-    local existing_webBasePath=$(/usr/glibc-compat/lib/ld-linux-x86-64.so.2 --library-path /usr/glibc-com
-pat/lib /usr/local/x-ui/x-ui setting -show true | grep -Eo 'webBasePath: .+' | awk '{print $2}')
-    local existing_port=$(/usr/glibc-compat/lib/ld-linux-x86-64.so.2 --library-path /usr/glibc-com
-pat/lib /usr/local/x-ui/x-ui setting -show true | grep -Eo 'port: .+' | awk '{print $2}')
+    local existing_webBasePath=$(/usr/local/x-ui/x-ui setting -show true | grep -Eo 'webBasePath: .+' | awk '{print $2}')
+    local existing_port=$(/usr/local/x-ui/x-ui setting -show true | grep -Eo 'port: .+' | awk '{print $2}')
     LOGI "****** 使用说明 ******"
     LOGI "请按照以下步骤完成此过程:"
     LOGI "1. Cloudflare注册的邮箱地址."
@@ -975,8 +962,7 @@ pat/lib /usr/local/x-ui/x-ui setting -show true | grep -Eo 'port: .+' | awk '{pr
             local webKeyFile="${certPath}/${CF_Domain}/privkey.pem"
 
             if [[ -f "$webCertFile" && -f "$webKeyFile" ]]; then
-                /usr/glibc-compat/lib/ld-linux-x86-64.so.2 --library-path /usr/glibc-com
-pat/lib /usr/local/x-ui/x-ui cert -webCert "$webCertFile" -webCertKey "$webKeyFile"
+                /usr/local/x-ui/x-ui cert -webCert "$webCertFile" -webCertKey "$webKeyFile"
                 LOGI "配置面板域名: $CF_Domain"
                 LOGI "  - 证书文件: $webCertFile"
                 LOGI "  - 私钥文件: $webKeyFile"

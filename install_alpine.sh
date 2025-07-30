@@ -19,36 +19,6 @@ install_base() {
     # sed -i "s/#allowipv6 = auto/allowipv6 = auto/g" /etc/fail2ban/fail2ban.conf
 }
 
-install_glibc() {
-    echo -e "${yellow}开始强制安装glibc兼容层...${plain}"
-
-    # 导入签名公钥（重复导入无影响）
-    curl -fsSL -o /etc/apk/keys/sgerrand.rsa.pub https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub || {
-        echo -e "${red}下载公钥失败，安装中止${plain}"
-        exit 1
-    }
-
-    # 下载glibc安装包
-    glibc_url="https://github.com/sgerrand/alpine-pkg-glibc/releases/download/2.35-r1/glibc-2.35-r1.apk"
-    curl -fsSL -o /tmp/glibc.apk "$glibc_url" || {
-        echo -e "${red}下载glibc包失败，安装中止${plain}"
-        exit 1
-    }
-
-    # 强制覆盖安装glibc包
-    apk add --allow-untrusted --force-overwrite /tmp/glibc.apk || {
-        echo -e "${red}安装glibc失败，安装中止${plain}"
-        rm -f /tmp/glibc.apk
-        exit 1
-    }
-
-    rm -f /tmp/glibc.apk
-    echo -e "${green}glibc 强制安装完成${plain}"
-
-    # 设置环境变量
-    export LD_LIBRARY_PATH=/lib:/usr/glibc-compat/lib:$LD_LIBRARY_PATH
-}
-
 gen_random_string() {
     local length="$1"
     LC_ALL=C tr -dc 'a-zA-Z0-9' </dev/urandom | fold -w "$length" | head -n 1
@@ -56,14 +26,10 @@ gen_random_string() {
 
 config_after_install() {
     local existing_username existing_password existing_webBasePath existing_port server_ip
-    existing_username=$(/usr/glibc-compat/lib/ld-linux-x86-64.so.2 --library-path /usr/glibc-com
-pat/lib /usr/local/x-ui/x-ui setting -show true 2>/dev/null | grep -Eo 'username: .+' | awk '{print $2}') || true
-    existing_password=$(/usr/glibc-compat/lib/ld-linux-x86-64.so.2 --library-path /usr/glibc-com
-pat/lib /usr/local/x-ui/x-ui setting -show true 2>/dev/null | grep -Eo 'password: .+' | awk '{print $2}') || true
-    existing_webBasePath=$(/usr/glibc-compat/lib/ld-linux-x86-64.so.2 --library-path /usr/glibc-com
-pat/lib /usr/local/x-ui/x-ui setting -show true 2>/dev/null | grep -Eo 'webBasePath: .+' | awk '{print $2}') || true
-    existing_port=$(/usr/glibc-compat/lib/ld-linux-x86-64.so.2 --library-path /usr/glibc-com
-pat/lib /usr/local/x-ui/x-ui setting -show true 2>/dev/null | grep -Eo 'port: .+' | awk '{print $2}') || true
+    existing_username=$(/usr/local/x-ui/x-ui setting -show true 2>/dev/null | grep -Eo 'username: .+' | awk '{print $2}') || true
+    existing_password=$(/usr/local/x-ui/x-ui setting -show true 2>/dev/null | grep -Eo 'password: .+' | awk '{print $2}') || true
+    existing_webBasePath=$(/usr/local/x-ui/x-ui setting -show true 2>/dev/null | grep -Eo 'webBasePath: .+' | awk '{print $2}') || true
+    existing_port=$(/usr/local/x-ui/x-ui setting -show true 2>/dev/null | grep -Eo 'port: .+' | awk '{print $2}') || true
     server_ip=$(curl -s https://api.ipify.org || echo "服务器IP获取失败")
 
     if [[ -z "$existing_username" || "$existing_username" == "admin" ]]; then
@@ -72,8 +38,7 @@ pat/lib /usr/local/x-ui/x-ui setting -show true 2>/dev/null | grep -Eo 'port: .+
         existing_webBasePath=$(gen_random_string 15)
         existing_port=$(shuf -i 1024-62000 -n 1)
 
-        /usr/glibc-compat/lib/ld-linux-x86-64.so.2 --library-path /usr/glibc-com
-pat/lib /usr/local/x-ui/x-ui setting -username "$existing_username" -password "$existing_password" -port "$existing_port" -webBasePath "$existing_webBasePath"
+        /usr/local/x-ui/x-ui setting -username "$existing_username" -password "$existing_password" -port "$existing_port" -webBasePath "$existing_webBasePath"
     fi
 
     echo -e "${green}x-ui 面板安装完成，安全登录信息如下：${plain}"
@@ -127,13 +92,11 @@ install_x_ui() {
     rc-update add x-ui default
     rc-service x-ui start
 
-    /usr/glibc-compat/lib/ld-linux-x86-64.so.2 --library-path /usr/glibc-com
-pat/lib /usr/local/x-ui/x-ui migrate
+    /usr/local/x-ui/x-ui migrate
 
     config_after_install
 }
 
 # 主流程
 install_base
-install_glibc
 install_x_ui

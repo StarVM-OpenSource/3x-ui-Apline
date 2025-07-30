@@ -1,16 +1,13 @@
 #!/sbin/openrc-run
 
-command="/usr/glibc-compat/lib/ld-linux-x86-64.so.2"
-command_args="--library-path /usr/glibc-compat/lib /usr/local/x-ui/x-ui"
+command="/usr/local/x-ui/x-ui"
 command_background=true
 pidfile="/run/x-ui.pid"
 description="Custom service for x-ui"
 procname="x-ui"
-
 depend() {
     need net
 }
-
-start_pre() {
-    cd /usr/local/x-ui || return 1
+start_pre(){
+    cd /usr/local/x-ui
 }
