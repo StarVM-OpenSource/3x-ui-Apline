@@ -95,6 +95,26 @@ install_x_ui() {
     /usr/local/x-ui/x-ui migrate
 
     config_after_install
+
+    echo -e "${green}x-ui ${tag_version}${plain} 安装完成, 运行中..."
+    echo -e ""
+    echo -e "x-ui子命令菜单:"
+    echo -e "----------------------------------------------"
+    echo -e "x-ui              - 主菜单"
+    echo -e "x-ui start        - 运行服务"
+    echo -e "x-ui stop         - 停止服务"
+    echo -e "x-ui restart      - 重启服务"
+    echo -e "x-ui status       - 查看服务状态"
+    echo -e "x-ui settings     - 查看服务配置"
+    echo -e "x-ui enable       - 打开服务开机自动启动"
+    echo -e "x-ui disable      - 关闭服务开机自动启动"
+    echo -e "x-ui log          - 查看日志"
+    echo -e "x-ui banlog       - 查看Fail2ban日志"
+    echo -e "x-ui update       - 升级"
+    echo -e "x-ui legacy       - 安装旧版本"
+    echo -e "x-ui install      - 安装"
+    echo -e "x-ui uninstall    - 卸载"
+    echo -e "----------------------------------------------"
 }
 
 # 主流程
