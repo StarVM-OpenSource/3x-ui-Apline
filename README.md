@@ -7,8 +7,14 @@ https://github.com/MHSanaei/3x-ui
 # 一键安装
 ```
 apk add curl bash gzip
+```
+```
+bash <(curl -Ls https://raw.githubusercontent.com/StarVM-OpenSource/3x-ui-Apline/refs/heads/main/glibc.sh)
+```
+```
 bash <(curl -Ls https://raw.githubusercontent.com/StarVM-OpenSource/3x-ui-Apline/refs/heads/main/install_alpine.sh)
 ```
+
 # 仅移植了核心程序 不保证其他菜单可用性
 
 ## 致谢
