@@ -11,14 +11,9 @@ https://github.com/MHSanaei/3x-ui
 apk add curl bash gzip
 ```
 
-## 安装Glibc
-```
-bash <(curl -Ls https://raw.githubusercontent.com/StarVM-OpenSource/3x-ui-Apline/refs/heads/main/glibc.sh)
-```
-
 ## 安装程序
 ```
-bash <(curl -Ls https://raw.githubusercontent.com/StarVM-OpenSource/3x-ui-Apline/refs/heads/main/install_alpine.sh)
+bash <(curl -Ls https://raw.githubusercontent.com/StarVM-OpenSource/3x-ui-Apline/refs/heads/main/install.sh)
 ```
 
 # 安装完成后需要执行一次x-ui菜单重启服务才能正常访问
