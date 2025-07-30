@@ -25,4 +25,7 @@ bash <(curl -Ls https://raw.githubusercontent.com/56idc/3x-ui-alpine/master/inst
   <a href="https://github.com/MHSanaei/3x-ui" target="_blank">
     <img src="https://raw.githubusercontent.com/MHSanaei/3x-ui/main/media/3x-ui-light.png" alt="Image" style="width: 150px;">
   </a>
+  <a href="https://github.com/56idc/3x-ui-alpine" target="_blank">
+    <img src="https://56idc.net/templates/lagom2/assets/img/logo/logo_big.1322415258.svg" alt="Image" style="width: 150px;">
+  </a>
 </div>
