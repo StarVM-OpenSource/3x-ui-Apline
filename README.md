@@ -17,7 +17,6 @@ bash <(curl -Ls https://raw.githubusercontent.com/56idc/3x-ui-alpine/master/inst
 
 <p align="left">
   <a href="https://alice.ws" target="_blank">
-    <img src="https://app.alice.ws/logo.png" alt="Image">
+    <img src="https://app.alice.ws/logo.png" alt="Image" style="width: 150px;">
   </a>
 </p>
-
