@@ -10,3 +10,14 @@ apk add curl bash gzip
 bash <(curl -Ls https://raw.githubusercontent.com/56idc/3x-ui-alpine/master/install_alpine.sh)
 ```
 # 仅移植了核心程序 不保证其他菜单可用性
+
+## 致谢
+
+**如果这个项目对您有帮助，您可以给它一个**:star2:
+
+<p align="left">
+  <a href="https://alice.ws" target="_blank">
+    <img src="https://app.alice.ws/logo.png" alt="Image">
+  </a>
+</p>
+
