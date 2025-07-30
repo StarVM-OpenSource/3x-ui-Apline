@@ -18,6 +18,8 @@ bash <(curl -Ls https://raw.githubusercontent.com/StarVM-OpenSource/3x-ui-Apline
 
 # 安装完成后需要执行一次x-ui菜单重启服务才能正常访问
 
+# 群友反馈：需要在3x-ui面板执行更新一次geoip.dat Xray才能启动
+
 # 仅移植了核心程序 不保证其他菜单可用性
 
 ## 致谢
