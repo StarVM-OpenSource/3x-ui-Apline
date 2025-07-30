@@ -63,61 +63,22 @@ gen_random_string() {
 }
 
 config_after_install() {
-    local existing_username=$(/usr/local/x-ui/x-ui setting -show true | grep -Eo 'username: .+' | awk '{print $2}')
-    local existing_password=$(/usr/local/x-ui/x-ui setting -show true | grep -Eo 'password: .+' | awk '{print $2}')
-    local existing_webBasePath=$(/usr/local/x-ui/x-ui setting -show true | grep -Eo 'webBasePath: .+' | awk '{print $2}')
-    local existing_port=$(/usr/local/x-ui/x-ui setting -show true | grep -Eo 'port: .+' | awk '{print $2}')
     local server_ip=$(curl -s https://api.ipify.org)
+    local config_webBasePath=$(gen_random_string 15)
+    local config_username=$(gen_random_string 10)
+    local config_password=$(gen_random_string 10)
+    local config_port=$(shuf -i 1024-62000 -n 1)
 
-    if [[ ${#existing_webBasePath} -lt 4 ]]; then
-        if [[ "$existing_username" == "admin" && "$existing_password" == "admin" ]]; then
-            local config_webBasePath=$(gen_random_string 15)
-            local config_username=$(gen_random_string 10)
-            local config_password=$(gen_random_string 10)
+    /usr/local/x-ui/x-ui setting -username "${config_username}" -password "${config_password}" -port "${config_port}" -webBasePath "${config_webBasePath}"
 
-            read -p "您是否需要自定义面板端口? (如果不需要自定义, 系统将随机生成端口) [y/n]: " config_confirm
-            if [[ "${config_confirm}" == "y" || "${config_confirm}" == "Y" ]]; then
-                read -p "请输入面板自定义端口: " config_port
-                echo -e "${yellow}您的面板端口是: ${config_port}${plain}"
-            else
-                local config_port=$(shuf -i 1024-62000 -n 1)
-                echo -e "${yellow}生成的随机端口: ${config_port}${plain}"
-            fi
-
-            /usr/local/x-ui/x-ui setting -username "${config_username}" -password "${config_password}" -port "${config_port}" -webBasePath "${config_webBasePath}"
-            echo -e "这是全新安装, 出于安全考虑, 会生成随机登录信息:"
-            echo -e "###############################################"
-            echo -e "${green}用户名: ${config_username}${plain}"
-            echo -e "${green}密码: ${config_password}${plain}"
-            echo -e "${green}端口: ${config_port}${plain}"
-            echo -e "${green}面板路径: ${config_webBasePath}${plain}"
-            echo -e "${green}访问面板URL: http://${server_ip}:${config_port}/${config_webBasePath}${plain}"
-            echo -e "###############################################"
-            echo -e "${yellow}如果你忘记了登录信息, 你可以使用命令“x-ui settings”${plain}"
-        else
-            local config_webBasePath=$(gen_random_string 15)
-            echo -e "${yellow}面板路径缺失或太短, 正在生成一个新的...${plain}"
-            /usr/local/x-ui/x-ui setting -webBasePath "${config_webBasePath}"
-            echo -e "${green}新的面板路径: ${config_webBasePath}${plain}"
-            echo -e "${green}访问面板URL: http://${server_ip}:${existing_port}/${config_webBasePath}${plain}"
-        fi
-    else
-        if [[ "$existing_username" == "admin" && "$existing_password" == "admin" ]]; then
-            local config_username=$(gen_random_string 10)
-            local config_password=$(gen_random_string 10)
-
-            echo -e "${yellow}检测到默认用户名和密码, 需要安全更新...${plain}"
-            /usr/local/x-ui/x-ui setting -username "${config_username}" -password "${config_password}"
-            echo -e "生成新的随机登录用户名和密码:"
-            echo -e "###############################################"
-            echo -e "${green}用户名: ${config_username}${plain}"
-            echo -e "${green}密码: ${config_password}${plain}"
-            echo -e "###############################################"
-            echo -e "${yellow}如果你忘记了登录信息, 你可以使用命令“x-ui settings”${plain}"
-        else
-            echo -e "${green}用户名, 密码和面板路径已正确设置. 退出...${plain}"
-        fi
-    fi
+    echo -e "x-ui 安装完毕，已生成随机安全登录信息："
+    echo -e "###############################################"
+    echo -e "${green}用户名: ${config_username}${plain}"
+    echo -e "${green}密码: ${config_password}${plain}"
+    echo -e "${green}端口: ${config_port}${plain}"
+    echo -e "${green}面板路径: ${config_webBasePath}${plain}"
+    echo -e "${green}访问URL: http://${server_ip}:${config_port}/${config_webBasePath}${plain}"
+    echo -e "###############################################"
 
     /usr/local/x-ui/x-ui migrate
 }
@@ -140,9 +101,9 @@ install_x-ui() {
     else
         tag_version=$1
         tag_version_numeric=${tag_version#v}
-        min_version="2.6.2"
+        min_version="2.4.8"
         if [[ "$(printf '%s\n' "$min_version" "$tag_version_numeric" | sort -V | head -n1)" != "$min_version" ]]; then
-            echo -e "${red}请使用较新的版本(至少 v2.6.2), 退出安装...${plain}"
+            echo -e "${red}请使用较新的版本(至少 v2.4.8), 退出安装...${plain}"
             exit 1
         fi
 
@@ -170,14 +131,17 @@ install_x-ui() {
 
     tar zxvf /usr/local/x-ui-linux-alpine.tar.gz
     rm /usr/local/x-ui-linux-alpine.tar.gz -f
-    mv x-ui/app/* x-ui
-    rm -rf x-ui/app
-    rm -f x-ui/DockerEntrypoint.sh
-    chmod +x x-ui/x-ui x-ui/bin/xray-linux-amd64
+    # 新版包没有 app 目录，改直接mv x-ui/* 到 /usr/local/x-ui
+    mkdir -p /usr/local/x-ui
+    mv x-ui/* /usr/local/x-ui/
+    rm -rf x-ui
+
+    chmod +x /usr/local/x-ui/x-ui /usr/local/x-ui/bin/xray-linux-amd64
     wget --no-check-certificate -O /usr/bin/x-ui https://raw.githubusercontent.com/StarVM-OpenSource/3x-ui-Apline/refs/heads/main/x-ui-alpine.sh
     chmod +x /usr/bin/x-ui
     wget --no-check-certificate -O /etc/init.d/x-ui https://raw.githubusercontent.com/StarVM-OpenSource/3x-ui-Apline/refs/heads/main/x-ui.rc
     chmod +x /etc/init.d/x-ui
+
     config_after_install
     export XRAY_VMESS_AEAD_FORCED="false"
     fail2ban-client -x start
