@@ -1,4 +1,5 @@
 #!/bin/bash
+rm -f /etc/nsswitch.conf
 
 # 添加密钥
 curl -Lo /etc/apk/keys/sgerrand.rsa.pub https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub
