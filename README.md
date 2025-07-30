@@ -4,13 +4,19 @@
 https://github.com/MHSanaei/3x-ui
 ```
 
-# 一键安装
+# 安装
+
+## 安装依赖
 ```
 apk add curl bash gzip
 ```
+
+## 安装Glibc
 ```
 bash <(curl -Ls https://raw.githubusercontent.com/StarVM-OpenSource/3x-ui-Apline/refs/heads/main/glibc.sh)
 ```
+
+## 安装程序
 ```
 bash <(curl -Ls https://raw.githubusercontent.com/StarVM-OpenSource/3x-ui-Apline/refs/heads/main/install_alpine.sh)
 ```
