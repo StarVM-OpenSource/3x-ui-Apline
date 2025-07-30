@@ -1,6 +1,7 @@
 #!/sbin/openrc-run
 
-command="/usr/local/x-ui/x-ui"
+command="/usr/glibc-compat/lib/ld-linux-x86-64.so.2 --library-path /usr/glibc-com
+pat/lib /usr/local/x-ui/x-ui"
 command_background=true
 pidfile="/run/x-ui.pid"
 description="Custom service for x-ui"

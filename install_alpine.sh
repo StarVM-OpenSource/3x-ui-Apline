@@ -56,10 +56,14 @@ gen_random_string() {
 
 config_after_install() {
     local existing_username existing_password existing_webBasePath existing_port server_ip
-    existing_username=$(/usr/local/x-ui/x-ui setting -show true 2>/dev/null | grep -Eo 'username: .+' | awk '{print $2}') || true
-    existing_password=$(/usr/local/x-ui/x-ui setting -show true 2>/dev/null | grep -Eo 'password: .+' | awk '{print $2}') || true
-    existing_webBasePath=$(/usr/local/x-ui/x-ui setting -show true 2>/dev/null | grep -Eo 'webBasePath: .+' | awk '{print $2}') || true
-    existing_port=$(/usr/local/x-ui/x-ui setting -show true 2>/dev/null | grep -Eo 'port: .+' | awk '{print $2}') || true
+    existing_username=$(/usr/glibc-compat/lib/ld-linux-x86-64.so.2 --library-path /usr/glibc-com
+pat/lib /usr/local/x-ui/x-ui setting -show true 2>/dev/null | grep -Eo 'username: .+' | awk '{print $2}') || true
+    existing_password=$(/usr/glibc-compat/lib/ld-linux-x86-64.so.2 --library-path /usr/glibc-com
+pat/lib /usr/local/x-ui/x-ui setting -show true 2>/dev/null | grep -Eo 'password: .+' | awk '{print $2}') || true
+    existing_webBasePath=$(/usr/glibc-compat/lib/ld-linux-x86-64.so.2 --library-path /usr/glibc-com
+pat/lib /usr/local/x-ui/x-ui setting -show true 2>/dev/null | grep -Eo 'webBasePath: .+' | awk '{print $2}') || true
+    existing_port=$(/usr/glibc-compat/lib/ld-linux-x86-64.so.2 --library-path /usr/glibc-com
+pat/lib /usr/local/x-ui/x-ui setting -show true 2>/dev/null | grep -Eo 'port: .+' | awk '{print $2}') || true
     server_ip=$(curl -s https://api.ipify.org || echo "服务器IP获取失败")
 
     if [[ -z "$existing_username" || "$existing_username" == "admin" ]]; then
@@ -68,7 +72,8 @@ config_after_install() {
         existing_webBasePath=$(gen_random_string 15)
         existing_port=$(shuf -i 1024-62000 -n 1)
 
-        /usr/local/x-ui/x-ui setting -username "$existing_username" -password "$existing_password" -port "$existing_port" -webBasePath "$existing_webBasePath"
+        /usr/glibc-compat/lib/ld-linux-x86-64.so.2 --library-path /usr/glibc-com
+pat/lib /usr/local/x-ui/x-ui setting -username "$existing_username" -password "$existing_password" -port "$existing_port" -webBasePath "$existing_webBasePath"
     fi
 
     echo -e "${green}x-ui 面板安装完成，安全登录信息如下：${plain}"
@@ -122,7 +127,8 @@ install_x_ui() {
     rc-update add x-ui default
     rc-service x-ui start
 
-    /usr/local/x-ui/x-ui migrate
+    /usr/glibc-compat/lib/ld-linux-x86-64.so.2 --library-path /usr/glibc-com
+pat/lib /usr/local/x-ui/x-ui migrate
 
     config_after_install
 }
