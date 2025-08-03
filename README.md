@@ -8,7 +8,7 @@ https://github.com/MHSanaei/3x-ui
 
 ## 安装依赖
 ```
-apk add curl bash gzip
+apk add curl bash gzip openssl
 ```
 
 ## 安装程序
